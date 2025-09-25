@@ -156,7 +156,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   Widget build(BuildContext context) {
     final items = <Widget>[
       if (name.isNotEmpty)
-        Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       if (companyName.isNotEmpty) ...[
         const SizedBox(height: 4),
         Text(companyName, style: const TextStyle(fontSize: 15)),
@@ -165,7 +165,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         const SizedBox(height: 8),
         Row(
           children: [
-            const Text('Contact: ', style: TextStyle(fontWeight: FontWeight.w700)),
+            const Text('Contact: ', style: TextStyle(fontWeight: FontWeight.bold)),
             Text(mobile),
             const Spacer(),
             IconButton(onPressed: _launchTel, icon: const Icon(Icons.call)),
@@ -252,7 +252,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               const SizedBox(height: 16),
               const Text('Previous Call Details',
                   style:
-                  TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
 
               if (calls.isEmpty)
@@ -361,7 +361,7 @@ class _CallTile extends StatelessWidget {
                   children: [
                     // Line 1
                     Text('Call Num : ${item.callNum}',
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
 
                     // Line 2
@@ -396,7 +396,7 @@ class _CallTile extends StatelessWidget {
                               Text('Stage: ${item.stage}',
                                   style: TextStyle(
                                       color: stageClr,
-                                      fontWeight: FontWeight.w700)),
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),

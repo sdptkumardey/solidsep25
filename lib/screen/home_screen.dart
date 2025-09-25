@@ -4,11 +4,13 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:solidplyaug25/screen/target_report.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'attendance_service.dart';
 import 'app_drawer.dart';
 import 'call_client_det.dart';
 import 'call_manage.dart';
+import 'call_report_page.dart';
 import 'check_in_screen.dart';
 import 'download.dart';
 import 'route_observer.dart'; // RouteObserver<PageRoute>
@@ -50,6 +52,32 @@ class FollowupItem {
   );
 }
 
+// ---------- Incentive Model ----------
+class IncentiveItem {
+  final String targetNa;
+  final String targetAchieveNa;
+  final String incentive;
+  final String targetTon;
+  final String targetAchieveTon;
+
+  IncentiveItem({
+    required this.targetNa,
+    required this.targetAchieveNa,
+    required this.incentive,
+    required this.targetTon,
+    required this.targetAchieveTon,
+  });
+
+  factory IncentiveItem.fromJson(Map<String, dynamic> j) => IncentiveItem(
+    targetNa: (j['target_na'] ?? '0').toString(),
+    targetAchieveNa: (j['target_achieve_na'] ?? '0').toString(),
+    incentive: (j['incentive'] ?? '0').toString(),
+    targetTon: (j['target_ton'] ?? '0').toString(),
+    targetAchieveTon: (j['target_achive_ton'] ?? '0').toString(),
+  );
+}
+
+
 class HomeScreen extends StatefulWidget {
   static String id = 'home';
 
@@ -80,6 +108,9 @@ class _HomeScreenState extends State<HomeScreen>
   String? _dashError;
   List<StageStat> _stages = [];
   List<FollowupItem> _followups = [];
+
+  // Incentive
+  IncentiveItem? _incentive;
 
   // Debug for dashboard request
   String? _lastDashUrl;
@@ -182,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen>
         // Also clear dashboard when pending
         _stages = [];
         _followups = [];
+        _incentive = null;
         _dashError = null;
       });
     }
@@ -295,15 +327,22 @@ class _HomeScreenState extends State<HomeScreen>
 
       final List msStage = (map['ms_stage'] as List? ?? []);
       final List msFollow = (map['ms_followup'] as List? ?? []);
+      final List msIncentive = (map['ms_incentive'] as List? ?? []);
 
       final stages =
       msStage.map((e) => StageStat.fromJson(e)).toList().cast<StageStat>();
       final follows =
       msFollow.map((e) => FollowupItem.fromJson(e)).toList().cast<FollowupItem>();
 
+      IncentiveItem? incentive;
+      if (msIncentive.isNotEmpty) {
+        incentive = IncentiveItem.fromJson(msIncentive.first);
+      }
+
       setState(() {
         _stages = stages;
         _followups = follows;
+        _incentive = incentive;
       });
     } catch (e) {
       setState(() => _dashError = e.toString());
@@ -311,7 +350,6 @@ class _HomeScreenState extends State<HomeScreen>
       if (mounted) setState(() => _dashLoading = false);
     }
   }
-
 
   // separated small wrapper to keep analyzer happy
   Future<UriResponse> _post(Uri url, Map<String, String> fields) async {
@@ -327,10 +365,11 @@ class _HomeScreenState extends State<HomeScreen>
     return UriResponse(statusCode: res.statusCode, body: body);
   }
 
-
   Map<String, dynamic>? _safeJson(String body) {
     try {
-      return body.isEmpty ? null : (JsonDecoder().convert(body) as Map<String, dynamic>);
+      return body.isEmpty
+          ? null
+          : (JsonDecoder().convert(body) as Map<String, dynamic>);
     } catch (_) {
       return null;
     }
@@ -350,7 +389,9 @@ class _HomeScreenState extends State<HomeScreen>
           title: Row(
             children: [
               if (_name.isNotEmpty)
-                Text(_name, style: const TextStyle(color: Colors.white, fontSize: 16.0)),
+                Text(_name,
+                    style:
+                    const TextStyle(color: Colors.white, fontSize: 16.0)),
             ],
           ),
           actions: [
@@ -369,24 +410,23 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () async {
             final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const CheckInScreen()),
+              MaterialPageRoute(
+                  builder: (_) => const CheckInScreen()),
             );
 
-            // If CheckInScreen returned the details map, update UI immediately
             if (result is Map) {
               if (!mounted) return;
               setState(() {
-                _attendancePending = false; // hide pending card
+                _attendancePending = false;
                 _attImgFile = (result['img_url'] ?? '').toString();
-                _attDateTime = (result['send_date_time'] ?? '').toString();
+                _attDateTime =
+                    (result['send_date_time'] ?? '').toString();
                 _attLat = (result['lat'] ?? '').toString();
                 _attLon = (result['lon'] ?? '').toString();
               });
               await _loadCheckoutDetail();
-              // Now fetch dashboard
               await _fetchHomeDashboard();
             } else if (result == true) {
-              // Fallback: in case you still return true
               await _refreshAttendance();
               if (!_attendancePending) {
                 await _fetchHomeDashboard();
@@ -422,11 +462,120 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const SizedBox(height: 14),
 
+                  // ---------- INCENTIVE CARDS ----------
+                  // ---------- INCENTIVE CARDS ----------
+                  if (_incentive != null) ...[
+                    const _SectionHeader(title: 'Incentive'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _IncentiveCard(
+                            icon: Icons.flag,
+                            title: "Target",
+                            ton: _incentive!.targetTon,
+                            na: _incentive!.targetNa,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _IncentiveCard(
+                            icon: Icons.check_circle,
+                            title: "Achieved",
+                            ton: _incentive!.targetAchieveTon,
+                            na: _incentive!.targetAchieveNa,
+                            color: Colors.green,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _IncentiveCard(
+                            icon: Icons.pending,
+                            title: "Pending",
+                            ton: ((double.tryParse(_incentive!.targetTon) ?? 0) -
+                                (double.tryParse(_incentive!.targetAchieveTon) ?? 0))
+                                .toStringAsFixed(2),
+                            na: ((double.tryParse(_incentive!.targetNa) ?? 0) -
+                                (double.tryParse(_incentive!.targetAchieveNa) ?? 0))
+                                .toStringAsFixed(2),
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Incentive Amount Box (unchanged)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_balance_wallet,
+                              color: Colors.purple, size: 26),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              "Incentive Amount : ${_incentive!.incentive}",
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+
+                    const SizedBox(height: 10),
+
+// ✅ View All Button restored
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF104270),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const TargetReportPage()),
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_new, color: Colors.white),
+                        label: const Text("View All"),
+                      ),
+                    ),
+
+
+                    const SizedBox(height: 20),
+
+
+                  ],
+
+
+
+
                   // ----- DASHBOARD -----
                   if (_dashLoading) ...[
                     const _SectionHeader(title: 'Dashboard'),
                     const SizedBox(height: 8),
-                    const Center(child: CircularProgressIndicator()),
+                    const Center(
+                        child: CircularProgressIndicator()),
                     const SizedBox(height: 6),
                   ] else if (_dashError != null) ...[
                     const _SectionHeader(title: 'Dashboard'),
@@ -456,12 +605,69 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
+// ---------- Incentive Card ----------
+class _IncentiveCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String ton;
+  final String na;
+  final Color color;
+
+  const _IncentiveCard({
+    required this.icon,
+    required this.title,
+    required this.ton,
+    required this.na,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 4),
+          Text(title,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15)),
+          const SizedBox(height: 6),
+          Text("Ton-$ton",
+              style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
+          Text("NA-$na",
+              style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+
+
 // ---------- Small helpers ----------
 class UriResponse {
   final int statusCode;
   final String body;
   UriResponse({required this.statusCode, required this.body});
 }
+
+// (rest of your classes unchanged: _SectionHeader, _ErrorBox, _PendingAttendanceCard, _CheckedInCard, _InlineActionButtons, _StagesWrap, _StagesTable, _StagePill, _FollowupsList)
+
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -470,7 +676,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(width: 6),
         Expanded(
           child: Container(height: 1, color: Colors.black12),
@@ -541,7 +747,7 @@ class _PendingAttendanceCard extends StatelessWidget {
                 Text(
                   "Today's attendance is pending",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 6),
                 Text(
@@ -631,7 +837,7 @@ class _CheckedInCard extends StatelessWidget {
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                     if (dateTime.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -681,7 +887,7 @@ class _CheckedInCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     outDateTime.isNotEmpty ? "Check Out: $outDateTime" : "Check Out: —",
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -718,39 +924,62 @@ class _InlineActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: onManageCalls,
-            icon: const Icon(Icons.phone_in_talk_rounded, size: 20),
-            label: const Text('Manage Calls'),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6A5AE0), // violet/indigo
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: onManageCalls,
+                icon: const Icon(Icons.phone_in_talk_rounded, size: 20),
+                label: const Text('Manage Calls'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A5AE0),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: onDownloads,
+                icon: const Icon(Icons.download_rounded, size: 20),
+                label: const Text('Downloads'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF00BFA6),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: onDownloads,
-            icon: const Icon(Icons.download_rounded, size: 20),
-            label: const Text('Downloads'),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF00BFA6), // teal/green
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+        const SizedBox(height: 12),
+        // ✅ New My Calls button
+        FilledButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CallReportPage()),
+            );
+          },
+          icon: const Icon(Icons.assignment, size: 20),
+          label: const Text('My Calls'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF104270),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       ],
     );
   }
 }
+
 
 // ---------- Stages compact wrap ----------
 class _StagesWrap extends StatelessWidget {
@@ -830,7 +1059,7 @@ class _StagesTable extends StatelessWidget {
                   s.num.toString(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
             ],
@@ -867,11 +1096,11 @@ class _StagePill extends StatelessWidget {
             ),
             child: Text(
               '$count',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -932,7 +1161,7 @@ class _FollowupsList extends StatelessWidget {
                 it.companyName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -443,7 +443,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
     );
   }
 }

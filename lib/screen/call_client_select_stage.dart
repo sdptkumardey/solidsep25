@@ -193,7 +193,7 @@ class _StageCard extends StatelessWidget {
                 title,
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.bold,
                   color: color.withOpacity(0.95),
                 ),
               ),

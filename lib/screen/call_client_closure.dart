@@ -506,7 +506,7 @@ class _ClosureScreenState extends State<ClosureScreen> {
                   (_args.clientName?.isNotEmpty ?? false)
                       ? _args.clientName!
                       : 'Client #${_args.clientId}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
@@ -688,7 +688,7 @@ class _ClosureScreenState extends State<ClosureScreen> {
                           'Saving your entry…',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: 4),
@@ -910,7 +910,7 @@ class _ImagePickerTile extends StatelessWidget {
                 Flexible(
                   child: Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -951,7 +951,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
     );
   }
 }

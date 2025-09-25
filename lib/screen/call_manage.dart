@@ -140,7 +140,7 @@ class _BigActionCard extends StatelessWidget {
                   Text(title,
                       style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.bold,
                       )),
                   const SizedBox(height: 6),
                   Text(

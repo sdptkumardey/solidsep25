@@ -142,7 +142,7 @@ class _ExistingClientScreenState extends State<ExistingClientScreen> {
                     leading: const Icon(Icons.person),
                     title: Text(
                       c.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
